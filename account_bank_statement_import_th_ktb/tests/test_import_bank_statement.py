@@ -16,8 +16,11 @@ class TestXlsFile(TransactionCase):
         self.j_model = self.env['account.journal']
         self.absl_model = self.env['account.bank.statement.line']
 
-        cur = self.env['res.currency'].search(
-            [('name', 'like', 'THB')], limit=1)
+        # Ensure THB currency is active
+        cur = self.env['res.currency'].search([
+            ('name', '=', 'THB'),
+            ('active', '=', False)
+        ])
         cur.write({'active': True})
 
         bank = self.env['res.partner.bank'].create({
@@ -50,14 +53,19 @@ class TestXlsFile(TransactionCase):
         xls_file = base64.b64encode(open(xls_file_path, 'rb').read())
         bank_statement = self.absi_model.create(
             dict(data_file=xls_file))
-        bank_statement.import_file()
-        bank_st_record = self.abs_model.search(
-            [('name', 'like', 'TR to 7450123086')])[0]
-        self.assertEqual(bank_st_record.balance_start, 2516.56)
-        self.assertEqual(bank_st_record.balance_end_real, 22223.62)
+        retval = bank_statement.import_file()
+        self.assertEqual(retval['tag'], "bank_statement_reconciliation_view")
+        self.assertEqual(len(retval['context']['notifications']), 0)
+        statement_id = retval['context']['statement_ids'][0]
 
-        line = self.absl_model.search([
-            ('name', '=', 'Agrolait'),
-            ('statement_id', '=', bank_st_record.id)])[0]
-        self.assertEqual(line.ref, '219378')
-        self.assertEqual(line.date, datetime.date(2013, 8, 24))
+        abs_records = self.abs_model.search(
+            [('id', '=', statement_id)])
+        self.assertEqual(len(abs_records), 1)
+        #self.assertEqual(abs_records[0].balance_start, 2516.56)
+        self.assertTrue(abs(abs_records[0].balance_start - 3904.42) < 1)
+        self.assertTrue(abs(abs_records[0].balance_end_real - 22223.62) < 1)
+
+        absl_records = self.absl_model.search(
+            [('name', 'like', '7450123086')])
+        self.assertEqual(len(absl_records), 1)
+        self.assertEqual(absl_records[0].date, datetime.date(2020, 1, 4))

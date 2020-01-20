@@ -88,7 +88,6 @@ class AccountBankStatementImport(models.TransientModel):
                 del tx['balance']
                 transactions.append(tx)
         except Exception as e:
-            print(e)
             raise UserError(_(
                 "The following problem occurred during import. "
                 "The file might not be valid.\n\n %s") % e.message)
