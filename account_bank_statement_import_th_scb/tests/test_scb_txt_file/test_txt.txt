@@ -1,0 +1,3 @@
+Date	Time	Transaction	Channel	Description	Chq No	Withdrawal	Deposits	Balance
+02/01/2020	09:59	X1	FRCI	12342JS001020321 B/O SOMEONE ELSE		 	+91,890.08	+92,972.03
+02/01/2020	15:43	C2	ATM	กรุงไทย (KTB)		-20,000.00	 	+72,972.03

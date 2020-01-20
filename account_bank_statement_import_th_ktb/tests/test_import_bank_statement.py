@@ -29,7 +29,7 @@ class TestXlsFile(TransactionCase):
             'company_id': self.env.ref('base.main_company').id,
             'bank_id': self.env.ref('base.res_bank_1').id,
         })
-        self.env['account.journal'].create({
+        self.journal = self.env['account.journal'].create({
             'name': 'Bank Journal TEST KTB',
             'code': 'BNK12',
             'type': 'bank',
@@ -44,7 +44,8 @@ class TestXlsFile(TransactionCase):
         xls_file_wrong = base64.b64encode(open(xls_file_path, 'rb').read())
         bank_statement = self.absi_model.create(
             dict(data_file=xls_file_wrong))
-        self.assertFalse(bank_statement._read_file(data_file=xls_file_wrong))
+        retval = bank_statement._read_file_ktb(data_file=xls_file_wrong)
+        self.assertEqual(retval, (None, None))
 
     def test_xls_file_import(self):
         xls_file_path = get_module_resource(

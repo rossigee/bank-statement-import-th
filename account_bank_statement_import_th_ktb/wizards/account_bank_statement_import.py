@@ -15,7 +15,7 @@ class AccountBankStatementImport(models.TransientModel):
     _inherit = 'account.bank.statement.import'
 
     @api.model
-    def _read_file(self, data_file):
+    def _read_file_ktb(self, data_file):
         try:
             # Of course, it's not really an XLS file!
             broken_html = u"<html>" + data_file.decode('utf8') + u"</html>"
@@ -29,7 +29,7 @@ class AccountBankStatementImport(models.TransientModel):
                     "The file might not be valid."))
         except Exception as e:
             _logger.debug(e)
-            return False
+            return (None, None)
 
         account_number = None
         results = []
@@ -44,10 +44,11 @@ class AccountBankStatementImport(models.TransientModel):
             dateval = values[0].text.lstrip().rstrip()
             if(len(dateval) < 10):
                 continue
-            results.append(self._prepare_transaction_line(values))
+            results.append(self._prepare_transaction_line_ktb(values))
+
         return (account_number, results)
 
-    def _prepare_transaction_line(self, invals):
+    def _prepare_transaction_line_ktb(self, invals):
         # Parse date, labels and amounts
         dateval = invals[0].text.lstrip().rstrip()
         dateval = "{}-{}-{}".format(dateval[6:10], dateval[3:5], dateval[0:2])
@@ -71,7 +72,7 @@ class AccountBankStatementImport(models.TransientModel):
 
     def _parse_file(self, data_file):
         # If we can't read it, pass it to next handler
-        (account_number, rawdata) = self._read_file(data_file)
+        (account_number, rawdata) = self._read_file_ktb(data_file)
         if not rawdata:
             return super(AccountBankStatementImport, self)._parse_file(data_file)
 

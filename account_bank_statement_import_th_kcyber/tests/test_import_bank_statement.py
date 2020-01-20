@@ -4,84 +4,77 @@ import base64
 import datetime
 
 
-class TestOfxFile(TransactionCase):
-    """Tests for import bank statement KrungThai XLS file format
+class TestCsvFile(TransactionCase):
+    """Tests for import bank statement Kasikorn KCyber CSV file format
     (account.bank.statement.import)
     """
 
     def setUp(self):
-        super(TestOfxFile, self).setUp()
+        super(TestCsvFile, self).setUp()
         self.absi_model = self.env['account.bank.statement.import']
         self.abs_model = self.env['account.bank.statement']
-        self.j_model = self.env['account.journal']
         self.absl_model = self.env['account.bank.statement.line']
-        cur = self.env.ref('base.USD')
-        self.env.ref('base.main_company').currency_id = cur.id
+
+        # Ensure THB currency is active
+        cur = self.env['res.currency'].search([
+            ('name', '=', 'THB'),
+            ('active', '=', False)
+        ])
+        cur.write({'active': True})
+
         bank = self.env['res.partner.bank'].create({
-            'acc_number': '123456',
+            'acc_number': '123-0-12345-1',
             'partner_id': self.env.ref('base.main_partner').id,
             'company_id': self.env.ref('base.main_company').id,
             'bank_id': self.env.ref('base.res_bank_1').id,
         })
-        self.env['account.journal'].create({
-            'name': 'Bank Journal TEST OFX',
+        journal = self.env['account.journal'].create({
+            'name': 'Bank Journal TEST KCyber',
             'code': 'BNK12',
             'type': 'bank',
             'bank_account_id': bank.id,
+            'currency_id': cur.id,
         })
+        self.journal_id = journal[0].id
 
-        bank_iban_ofx = self.env['res.partner.bank'].create({
-            'acc_number': 'FR7630001007941234567890185',
-            'partner_id': self.env.ref('base.main_partner').id,
-            'company_id': self.env.ref('base.main_company').id,
-            'bank_id': self.env.ref('base.res_bank_1').id,
-        })
-
-        self.env['account.journal'].create({
-            'name': 'FR7630001007941234567890185',
-            'code': 'BNK13',
-            'type': 'bank',
-            'bank_account_id': bank_iban_ofx.id,
-        })
-
-    def test_wrong_ofx_file_import(self):
-        ofx_file_path = get_module_resource(
-            'account_bank_statement_import_ofx',
-            'tests/test_ofx_file/', 'test_ofx_wrong.ofx')
-        ofx_file_wrong = base64.b64encode(open(ofx_file_path, 'rb').read())
+    def test_wrong_csv_file_import(self):
+        csv_file_path = get_module_resource(
+            'account_bank_statement_import_th_kcyber',
+            'tests/test_kcyber_csv_file/', 'test_csv_wrong.csv')
+        csv_file_wrong = base64.b64encode(open(csv_file_path, 'rb').read())
         bank_statement = self.absi_model.create(
-            dict(data_file=ofx_file_wrong))
-        self.assertFalse(bank_statement._check_ofx(data_file=ofx_file_wrong))
+            dict(data_file=csv_file_wrong))
+        retval = bank_statement._read_file_kcyber(data_file=csv_file_wrong)
+        self.assertEqual(retval, False)
 
-    def test_ofx_file_import(self):
-        ofx_file_path = get_module_resource(
-            'account_bank_statement_import_ofx',
-            'tests/test_ofx_file/', 'test_ofx.ofx')
-        ofx_file = base64.b64encode(open(ofx_file_path, 'rb').read())
+    def test_csv_file_import(self):
+        context = self.env.context.copy()
+        context.update({
+            'journal_id': self.journal_id
+        })
+        self.env.context = context
+
+        csv_file_path = get_module_resource(
+            'account_bank_statement_import_th_kcyber',
+            'tests/test_kcyber_csv_file/', 'test_csv.csv')
+        csv_file = base64.b64encode(open(csv_file_path, 'rb').read())
         bank_statement = self.absi_model.create(
-            dict(data_file=ofx_file))
-        bank_statement.import_file()
-        bank_st_record = self.abs_model.search(
-            [('name', 'like', '123456')])[0]
-        self.assertEqual(bank_st_record.balance_start, 2516.56)
-        self.assertEqual(bank_st_record.balance_end_real, 2156.56)
+            dict(data_file=csv_file))
+        retval = bank_statement.import_file()
+        self.assertEqual(retval['tag'], "bank_statement_reconciliation_view")
+        self.assertEqual(len(retval['context']['notifications']), 0)
+        statement_id = retval['context']['statement_ids'][0]
 
-        line = self.absl_model.search([
-            ('name', '=', 'Agrolait'),
-            ('statement_id', '=', bank_st_record.id)])[0]
-        self.assertEqual(line.ref, '219378')
-        self.assertEqual(line.date, datetime.date(2013, 8, 24))
+        abs_records = self.abs_model.search(
+            [('id', '=', statement_id)])
+        self.assertEqual(len(abs_records), 1)
+        #self.assertEqual(abs_records[0].balance_start, 2516.56)
+        print(abs_records[0].balance_start)
+        print(abs_records[0].balance_end_real)
+        self.assertTrue(abs(abs_records[0].balance_start - 15761.6) < 1)
+        self.assertTrue(abs(abs_records[0].balance_end_real - 14796.6) < 1)
 
-    def test_check_journal_bank_account(self):
-        ofx_file_path = get_module_resource(
-            'account_bank_statement_import_ofx',
-            'tests/test_ofx_file/', 'test_ofx_iban.ofx')
-        ofx_file = base64.b64encode(open(ofx_file_path, 'rb').read())
-        bank_st = self.absi_model.create(
-            dict(data_file=ofx_file))
-        journal_iban_ofx = self.j_model.search([
-            ('name', '=', 'FR7630001007941234567890185')])
-        res = bank_st._check_journal_bank_account(journal_iban_ofx,
-                                                  '12345678901')
-        self.assertTrue(res)
-        bank_st.with_context(journal_id=journal_iban_ofx.id).import_file()
+        absl_records = self.absl_model.search(
+            [('name', 'like', 'KCB08116')])
+        self.assertEqual(len(absl_records), 1)
+        self.assertEqual(absl_records[0].date, datetime.date(2020, 1, 7))

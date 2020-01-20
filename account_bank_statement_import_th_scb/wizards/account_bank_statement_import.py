@@ -15,13 +15,17 @@ class AccountBankStatementImport(models.TransientModel):
     _inherit = 'account.bank.statement.import'
 
     @api.model
-    def _read_file(self, data_file):
+    def _read_file_scb(self, data_file):
         try:
             sio = io.StringIO(data_file.decode('utf8'))
             lines = sio.readlines()
         except Exception as e:
-            print(e)
             _logger.debug(e)
+            return False
+
+        # Top-left cell should read 'Date'
+        labelcell = lines[0].rstrip().split('\t')[0]
+        if labelcell != "Date":
             return False
 
         results = []
@@ -32,10 +36,11 @@ class AccountBankStatementImport(models.TransientModel):
             dateval = values[0]
             if(len(dateval) < 10):
                 continue
-            results.append(self._prepare_transaction_line(values))
+            results.append(self._prepare_transaction_line_scb(values))
+
         return results
 
-    def _prepare_transaction_line(self, invals):
+    def _prepare_transaction_line_scb(self, invals):
         # Parse date, labels and amounts
         dateval = invals[0]
         dateval = "{}-{}-{}".format(dateval[6:10], dateval[3:5], dateval[0:2])
@@ -70,7 +75,7 @@ class AccountBankStatementImport(models.TransientModel):
         account_number = None
 
         # If we can't read it, pass it to next handler
-        rawdata = self._read_file(data_file)
+        rawdata = self._read_file_scb(data_file)
         if not rawdata:
             return super(AccountBankStatementImport, self)._parse_file(data_file)
 
@@ -87,7 +92,6 @@ class AccountBankStatementImport(models.TransientModel):
                 del tx['balance']
                 transactions.append(tx)
         except Exception as e:
-            print(e)
             raise UserError(_(
                 "The following problem occurred during import. "
                 "The file might not be valid.\n\n %s") % e.message)
