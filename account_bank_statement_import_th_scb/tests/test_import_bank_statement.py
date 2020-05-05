@@ -1,10 +1,14 @@
-from odoo.tests.common import TransactionCase
+import unittest
+
+from odoo.tests.common import TransactionCase, tagged
 from odoo.modules.module import get_module_resource
+
 import base64
 import datetime
 
 
-class TestTxtFile(TransactionCase):
+@tagged('standard', 'at_install')
+class TxtFileTest(TransactionCase):
     """Tests for import bank statement Siam Commercial TXT file format
     (account.bank.statement.import)
     """
@@ -76,3 +80,37 @@ class TestTxtFile(TransactionCase):
             [('name', 'like', '12342JS001020321')])
         self.assertEqual(len(absl_records), 1)
         self.assertEqual(absl_records[0].date, datetime.date(2020, 1, 2))
+
+    def test_txt_file_th_import(self):
+        context = self.env.context.copy()
+        context.update({
+            'journal_id': self.journal_id
+        })
+        self.env.context = context
+
+        txt_file_path = get_module_resource(
+            'account_bank_statement_import_th_scb',
+            'tests/test_scb_txt_file/', 'test_txt_th.txt')
+        txt_file = base64.b64encode(open(txt_file_path, 'rb').read())
+        bank_statement = self.absi_model.create(
+            dict(data_file=txt_file))
+        retval = bank_statement.import_file()
+        self.assertEqual(retval['tag'], "bank_statement_reconciliation_view")
+        self.assertEqual(len(retval['context']['notifications']), 0)
+        statement_id = retval['context']['statement_ids'][0]
+
+        abs_records = self.abs_model.search(
+            [('id', '=', statement_id)])
+        self.assertEqual(len(abs_records), 1)
+        print(abs_records[0])
+        self.assertTrue(abs(abs_records[0].balance_start - 50.00) < 1)
+        self.assertTrue(abs(abs_records[0].balance_end_real - 72972.03) < 1)
+
+        absl_records = self.absl_model.search(
+            [('name', 'like', '12342JS001020321')])
+        self.assertEqual(len(absl_records), 1)
+        self.assertEqual(absl_records[0].date, datetime.date(2020, 1, 2))
+
+
+if __name__ == '__main__':
+    unittest.main()

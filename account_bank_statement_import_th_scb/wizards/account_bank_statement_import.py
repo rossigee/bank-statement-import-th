@@ -25,7 +25,7 @@ class AccountBankStatementImport(models.TransientModel):
 
         # Top-left cell should read 'Date'
         labelcell = lines[0].rstrip().split('\t')[0]
-        if labelcell != "Date":
+        if labelcell != "Date" and labelcell != "วันที่":
             return False
 
         results = []
