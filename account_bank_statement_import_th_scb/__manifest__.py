@@ -1,7 +1,7 @@
 {
     'name': 'Import Siam Commercial Bank Statement',
     'category': 'Banking addons',
-    'version': '12.0.1.1.0',
+    'version': '13.0.1.1.0',
     'license': 'AGPL-3',
     'author': 'Ross Golder',
     'website': "https://www.golder.org",
