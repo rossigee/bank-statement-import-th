@@ -12,16 +12,17 @@ from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 
-class AccountBankStatementImport(models.TransientModel):
+class AccountBankStatementImportType1(models.TransientModel):
     _inherit = 'account.bank.statement.import'
 
     @api.model
-    def _read_file_kcyber(self, data_file):
+    def _read_file_kcyber_type1(self, data_file):
+        _logger.info("Checking upload for match as a KCyber statement (type 1)...")
         try:
             sio = io.StringIO(data_file.decode('utf8'))
             reader = csv.reader(sio)
         except Exception as e:
-            _logger.debug(e)
+            _logger.error(e)
             return False
 
         results = []
@@ -31,7 +32,7 @@ class AccountBankStatementImport(models.TransientModel):
 
             # Check 'Date' is on 7th line to confirm this is a KCyber statement
             if rowcount == 7 and values[0] != 'Date':
-                _logger.debug("Not a KCyber statement")
+                _logger.info("Not identified as a KCyber statement (CSV type1)")
                 return False
 
             # Discard header lines
@@ -47,14 +48,14 @@ class AccountBankStatementImport(models.TransientModel):
             if(len(dateval) < 10):
                 _logger.warn("Wrong number of chars in date ({})".format(len(dateval)))
                 continue
-            results.append(self._prepare_transaction_line_kcyber(values))
+            results.append(self._prepare_transaction_line_kcyber_type1(values))
 
         if len(results) < 1:
             return False
 
         return results
 
-    def _prepare_transaction_line_kcyber(self, invals):
+    def _prepare_transaction_line_kcyber_type1(self, invals):
         # Parse date, labels and amounts
         dateval = invals[0]
         dateval = "{}-{}-{}".format(dateval[6:10], dateval[3:5], dateval[0:2])
@@ -89,9 +90,9 @@ class AccountBankStatementImport(models.TransientModel):
         account_number = None
 
         # If we can't read it, pass it to next handler
-        rawdata = self._read_file_kcyber(data_file)
+        rawdata = self._read_file_kcyber_type1(data_file)
         if not rawdata:
-            return super(AccountBankStatementImport, self)._parse_file(data_file)
+            return super(AccountBankStatementImportType1, self)._parse_file(data_file)
 
         # Determine start balance for later
         balance_start = rawdata[0]['balance'] - rawdata[0]['amount']

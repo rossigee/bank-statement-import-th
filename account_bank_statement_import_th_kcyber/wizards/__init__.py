@@ -1,1 +1,2 @@
-from . import account_bank_statement_import
+from . import account_bank_statement_import_type1
+from . import account_bank_statement_import_type2

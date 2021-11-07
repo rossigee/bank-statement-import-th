@@ -1,5 +1,6 @@
 from odoo.tests.common import TransactionCase
 from odoo.modules.module import get_module_resource
+from odoo.exceptions import UserError
 import base64
 import datetime
 
@@ -14,6 +15,7 @@ class TestCsvFile(TransactionCase):
         self.absi_model = self.env['account.bank.statement.import']
         self.abs_model = self.env['account.bank.statement']
         self.absl_model = self.env['account.bank.statement.line']
+        self.ia_model = self.env['ir.attachment']
 
         # Ensure THB currency is active
         cur = self.env['res.currency'].search([
@@ -42,12 +44,19 @@ class TestCsvFile(TransactionCase):
             'account_bank_statement_import_th_kcyber',
             'tests/test_kcyber_csv_file/', 'test_csv_wrong.csv')
         csv_file_wrong = base64.b64encode(open(csv_file_path, 'rb').read())
+        attachment = self.ia_model.create(
+            dict(name="test1",type="binary",datas=csv_file_wrong)
+        )
         bank_statement = self.absi_model.create(
-            dict(data_file=csv_file_wrong))
-        retval = bank_statement._read_file_kcyber(data_file=csv_file_wrong)
-        self.assertEqual(retval, False)
+            dict(attachment_ids=[attachment['id']])
+        )
+        try:
+            retval = bank_statement.import_file()
+            self.assertTrue(False) # Should not get to here
+        except UserError:
+            pass
 
-    def test_csv_file_import(self):
+    def test_csv_file_import_type1(self):
         context = self.env.context.copy()
         context.update({
             'journal_id': self.journal_id
@@ -56,25 +65,59 @@ class TestCsvFile(TransactionCase):
 
         csv_file_path = get_module_resource(
             'account_bank_statement_import_th_kcyber',
-            'tests/test_kcyber_csv_file/', 'test_csv.csv')
+            'tests/test_kcyber_csv_file/', 'test_csv_type1.csv')
         csv_file = base64.b64encode(open(csv_file_path, 'rb').read())
+        attachment = self.ia_model.create(
+            dict(name="test1",type="binary",datas=csv_file)
+        )
         bank_statement = self.absi_model.create(
-            dict(data_file=csv_file))
+            dict(attachment_ids=[attachment['id']])
+        )
         retval = bank_statement.import_file()
         self.assertEqual(retval['tag'], "bank_statement_reconciliation_view")
         self.assertEqual(len(retval['context']['notifications']), 0)
-        statement_id = retval['context']['statement_ids'][0]
-
-        abs_records = self.abs_model.search(
-            [('id', '=', statement_id)])
-        self.assertEqual(len(abs_records), 1)
-        #self.assertEqual(abs_records[0].balance_start, 2516.56)
-        print(abs_records[0].balance_start)
-        print(abs_records[0].balance_end_real)
-        self.assertTrue(abs(abs_records[0].balance_start - 15761.6) < 1)
-        self.assertTrue(abs(abs_records[0].balance_end_real - 14796.6) < 1)
-
+        statement_line_id = retval['context']['statement_line_ids'][0]
         absl_records = self.absl_model.search(
-            [('name', 'like', 'KCB08116')])
-        self.assertEqual(len(absl_records), 1)
-        self.assertEqual(absl_records[0].date, datetime.date(2020, 1, 7))
+            [('id', '=', statement_line_id)]
+        )
+        statement = absl_records[0]['statement_id'][0]
+        self.assertTrue(abs(statement.balance_start - 15761.6) < 1)
+        self.assertTrue(abs(statement.balance_end_real - 14796.6) < 1)
+
+        # absl_records = self.absl_model.search(
+        #     [('name', 'like', 'KCB08116')])
+        # self.assertEqual(len(absl_records), 1)
+        # self.assertEqual(absl_records[0].date, datetime.date(2020, 1, 7))
+
+    def test_csv_file_import_type2(self):
+        context = self.env.context.copy()
+        context.update({
+            'journal_id': self.journal_id
+        })
+        self.env.context = context
+
+        csv_file_path = get_module_resource(
+            'account_bank_statement_import_th_kcyber',
+            'tests/test_kcyber_csv_file/', 'test_csv_type2.csv')
+        csv_file = base64.b64encode(open(csv_file_path, 'rb').read())
+        attachment = self.ia_model.create(
+            dict(name="test1",type="binary",datas=csv_file)
+        )
+        bank_statement = self.absi_model.create(
+            dict(attachment_ids=[attachment['id']])
+        )
+        retval = bank_statement.import_file()
+        self.assertEqual(retval['tag'], "bank_statement_reconciliation_view")
+        self.assertEqual(len(retval['context']['notifications']), 0)
+        statement_line_id = retval['context']['statement_line_ids'][0]
+        absl_records = self.absl_model.search(
+            [('id', '=', statement_line_id)]
+        )
+        statement = absl_records[0]['statement_id'][0]
+        self.assertTrue(abs(statement.balance_start - 17955.99) < 1)
+        self.assertTrue(abs(statement.balance_end_real - 19382.62) < 1)
+
+        # absl_records = self.absl_model.search(
+        #     [('name', 'like', 'KCB08116')])
+        # self.assertEqual(len(absl_records), 1)
+        # self.assertEqual(absl_records[0].date, datetime.date(2020, 1, 7))
