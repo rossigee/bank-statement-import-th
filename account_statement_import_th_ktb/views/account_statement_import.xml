@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="account_statement_import_form" model="ir.ui.view">
+        <field name="name">account.statement.import</field>
+        <field name="model">account.statement.import</field>
+        <field name="inherit_id" ref="account_statement_import.account_statement_import_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//ul[@id='statement_format']" position="inside">
+                <li>KrungThai (KTB) (.xls download)</li>
+            </xpath>
+        </field>
+    </record>
+</odoo>
