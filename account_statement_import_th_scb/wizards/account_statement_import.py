@@ -26,12 +26,12 @@ class AccountStatementImport(models.TransientModel):
             lines = sio.readlines()
         except Exception as e:
             _logger.warning(e)
-            return (None, None)
+            return False
 
         # Top-left cell should read 'Date'
         labelcell = lines[0].rstrip().split('\t')[0]
         if labelcell not in ("Date", "วันที่"):
-            return (None, None)
+            return False
 
         results = []
         for line in lines:
