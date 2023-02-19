@@ -24,11 +24,11 @@ def _prepare_transaction_line_kbiz_type1(invals):
     label1 = invals[3]
     label2 = invals[12]
     try:
-        debit = 0.0 - _val(invals[6])
+        debit = 0.0 - _val(invals[4])
     except ValueError:
         debit = 0.0
     try:
-        credit = _val(invals[4])
+        credit = _val(invals[5])
     except ValueError:
         credit = 0.0
     amount = debit + credit
