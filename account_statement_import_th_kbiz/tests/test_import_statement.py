@@ -11,36 +11,6 @@ import base64
 import json
 from datetime import datetime, date
 
-expected = {
-    'bad.csv': False,
-    'type1.csv': {
-        'results': []
-    }
-}
-
-
-def compare_txs(a, b):
-    ok = True
-    attrs = [
-        'date',
-        'ref',
-        'payment_ref',
-        'amount',
-    ]
-    for atx in a:
-        foundtx = False
-        for btx in b:
-            matchcount = 0
-            for key in attrs:
-                if str(atx[key]) == str(btx[key]):
-                    matchcount += 1
-            foundtx = matchcount == len(attrs)
-            if foundtx:
-                break
-            ok = False
-    return ok
-
-
 @tagged('golder', 'standard', 'kbiz')
 class TestParser(TransactionCase):
     """Tests for the KBiz statement file parser itself."""
@@ -50,27 +20,29 @@ class TestParser(TransactionCase):
         self.parser = self.env["account.statement.import.kbiz.parser"]
 
     def _do_parse_test(self, inputfile):
-        testfile = get_module_resource(
-            "account_statement_import_th_kbiz", "tests/test_files", inputfile
-        )
         resultfile = get_module_resource(
             "account_statement_import_th_kbiz", "tests/test_files", f"{inputfile}.json"
+        )
+        with open(resultfile, "r") as result:
+            actual = json.load(result)
+
+        testfile = get_module_resource(
+            "account_statement_import_th_kbiz", "tests/test_files", inputfile
         )
         with open(testfile, "rb") as data:
             res = self.parser.parse(data.read())
             self.assertTrue(res)
-            try:
-                with open(resultfile, "r") as result:
-                    actual = json.load(result)
-                    for i in range(2):
-                        self.assertEqual(res[i], actual[i])
-            except Exception as e:
-                print(f"Result file '{resultfile}' needs to match this...")
-                print(json.dumps(res, indent=4))
-                self.assertTrue(False)
+            for i in range(3):
+                if res[i] != actual[i]:
+                    print(f"Result file '{resultfile}' needs to match this...")
+                    print(json.dumps(res, indent=4))
+                self.assertEqual(res[i], actual[i])
 
     def test_parse_type1_th(self):
         self._do_parse_test("type1-th.csv")
+
+    def test_parse_type2_th(self):
+        self._do_parse_test("type2-th.csv")
 
 
 @tagged('golder', 'standard', 'kbiz')

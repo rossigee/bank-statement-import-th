@@ -1,0 +1,98 @@
+[
+    "THB",
+    null,
+    [
+        {
+            "balance_start": 445661.22,
+            "balance_end_real": 371654.72,
+            "name": "2022-11",
+            "date": "2022-11-30",
+            "transactions": [
+                {
+                    "date": "2022-11-01",
+                    "ref": "Payment",
+                    "payment_ref": "Paid for Ref X1358 ADVANCED WIRELESS NETWORK CO.,LTD.",
+                    "amount": 300.0,
+                    "unique_import_id": "18a8d5874c01af22ac3ffe8029b6d088934a2d270e345765480c0d79702517cf"
+                },
+                {
+                    "date": "2022-11-02",
+                    "ref": "Transfer Withdrawal",
+                    "payment_ref": "To X8794 MS. Moneypenny++",
+                    "amount": 25000.0,
+                    "unique_import_id": "a318d3ffc5a78cda085bd59946b893e3ff755b739c32a445a4e975585ebf2f06"
+                },
+                {
+                    "date": "2022-11-02",
+                    "ref": "Transfer Withdrawal",
+                    "payment_ref": "To X8794 MS. Moneypenny++",
+                    "amount": 7942.0,
+                    "unique_import_id": "bee40817c2c872ab442a19fe26859cdff8767cede1e54de59dc44482d36c065d"
+                },
+                {
+                    "date": "2022-11-05",
+                    "ref": "Transfer Withdrawal",
+                    "payment_ref": "To BBL X0463 HOCKHOELEE ROASTI++",
+                    "amount": 1260.0,
+                    "unique_import_id": "18308d7d939f6df9a46b7ee85e9958855a0a22284fb6ce8b9b6f1febf9bf2bd6"
+                },
+                {
+                    "date": "2022-11-14",
+                    "ref": "Transfer Withdrawal",
+                    "payment_ref": "To KTB X5432 JAMES BOND++",
+                    "amount": 20000.0,
+                    "unique_import_id": "f25cc15d6ace4ad631b65e1b4f3ee34518ac6ea0b42e44340b3ec24d036d175f"
+                },
+                {
+                    "date": "2022-11-17",
+                    "ref": "Transfer Withdrawal",
+                    "payment_ref": "To KTB X5432 JAMES BOND++",
+                    "amount": 10000.0,
+                    "unique_import_id": "882084163ed512d8a98bd50aaa9dffb17e703f7146615ff838fd2eb2103470c6"
+                },
+                {
+                    "date": "2022-11-19",
+                    "ref": "Payment",
+                    "payment_ref": "Paid for Ref X5467 ADVANCED WIRELESS NETWORK CO.,LTD.",
+                    "amount": 300.0,
+                    "unique_import_id": "82259347bb464088747eb66c291c29e80e9e32657456b39233c062b2dd06c44e"
+                },
+                {
+                    "date": "2022-11-21",
+                    "ref": "Transfer Withdrawal",
+                    "payment_ref": "To X2345 MRS. Pussy Galore++",
+                    "amount": 10000.0,
+                    "unique_import_id": "361a1eba1d267714f5eeae06fb58370389d20a7b9e0066ac2c26a8ab806720d5"
+                },
+                {
+                    "date": "2022-11-22",
+                    "ref": "Transfer Withdrawal",
+                    "payment_ref": "To KTB X5432 JAMES BOND++",
+                    "amount": 20000.0,
+                    "unique_import_id": "8db9533e57a4ce7d2d6aeb21817b22fbf5bdb9333f0aa8807be4c8d1aa32a97f"
+                },
+                {
+                    "date": "2022-11-26",
+                    "ref": "Transfer Withdrawal",
+                    "payment_ref": "To KTB X5432 JAMES BOND++",
+                    "amount": 10000.0,
+                    "unique_import_id": "aba18068c68a18245e88f28a113e1d50d6fc6a85a63bbb623f9db29d5486fe53"
+                },
+                {
+                    "date": "2022-11-29",
+                    "ref": "Transfer Withdrawal",
+                    "payment_ref": "To X2345 MRS. Pussy Galore++",
+                    "amount": 20000.0,
+                    "unique_import_id": "6d821c32d8bd4d94b5cbb39ed5639b4344e1e9061140248a6eae90e9b21ffa04"
+                },
+                {
+                    "date": "2022-11-30",
+                    "ref": "Automatic Deposit",
+                    "payment_ref": "From Goldfinger",
+                    "amount": -140795.5,
+                    "unique_import_id": "f0349f2f3538fca20eff75552ded83ef8dc2f738c192b7c02ff4d3d30b751218"
+                }
+            ]
+        }
+    ]
+]
