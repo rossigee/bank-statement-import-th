@@ -20,6 +20,7 @@ def _prepare_transaction_line_kbiz_type1(invals):
     # Parse date, labels and amounts
     dateval = invals[1]
     dateval = f"20{dateval[6:8]}-{dateval[3:5]}-{dateval[0:2]}"
+    timeval = invals[1]
     label1 = invals[3]
     label2 = invals[12]
     try:
@@ -31,8 +32,9 @@ def _prepare_transaction_line_kbiz_type1(invals):
     except ValueError:
         credit = 0.0
     amount = debit + credit
+    balance = invals[8]
 
-    hashkey = "".join([dateval, label1, label2, str(amount)])
+    hashkey = "".join([dateval, timeval, label1, label2, str(amount), balance])
     hashval = hashlib.sha256(hashkey.encode('utf-8'))
 
     vals = {
