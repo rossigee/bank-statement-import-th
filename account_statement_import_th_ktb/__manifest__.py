@@ -9,7 +9,7 @@
         'account_statement_import',
     ],
     'data': [
-        'views/account_statement_import.xml',
+        'views/view_account_statement_import.xml',
     ],
     'installable': True,
 }
