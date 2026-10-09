@@ -97,9 +97,12 @@ class AccountStatementImport(models.TransientModel):
                 del tx['balance']
                 transactions.append(tx)
         except Exception as e:
+            # Exception has no .message on Python 3; formatting the
+            # exception itself gives the message. Using e.message here
+            # raised AttributeError instead of the intended UserError.
             raise UserError(_(
                 "The following problem occurred during import. "
-                "The file might not be valid.\n\n %s") % e.message)
+                "The file might not be valid.\n\n %s") % e)
 
         vals_bank_statement = {
             'name': transactions[0]['date'][0:7],
