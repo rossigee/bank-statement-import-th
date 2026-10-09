@@ -120,8 +120,12 @@ class KBizParser(models.AbstractModel):
             total_amt += float(vals['amount'])
             tx1 = dict(vals)
             #del tx1['balance']
-            already_imported = self.env["account.statement.line"].search(
-                {[{"unique_import_id", "=", tx1["unique_import_id"]}]}
+            # account.statement.line does not exist; the model is
+            # account.bank.statement.line. The expression below was also not
+            # a domain at all: a set literal containing a list is unhashable
+            # and would raise TypeError rather than search anything.
+            already_imported = self.env["account.bank.statement.line"].search(
+                [("unique_import_id", "=", tx1["unique_import_id"])]
             )
             if len(already_imported) > 0:
                 _logger.warning(_("Statement line %d was already imported", lineno))
