@@ -28,6 +28,9 @@ class AccountStatementImport(models.TransientModel):
             _logger.warning(e)
             return False
 
+        if not lines:
+            raise UserError(_("The bank statement file is empty."))
+
         # Top-left cell should read 'Date'
         labelcell = lines[0].rstrip().split('\t')[0]
         if labelcell not in ("Date", "วันที่"):
@@ -110,5 +113,5 @@ class AccountStatementImport(models.TransientModel):
             'balance_start': balance_start,
             'balance_end_real': balance_start + total_amt,
         }
-        
+
         return "THB", account_number, [vals_bank_statement]
