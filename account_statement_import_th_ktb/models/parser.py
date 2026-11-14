@@ -7,13 +7,6 @@ import logging
 import hashlib
 from lxml import etree
 
-from odoo.exceptions import ValidationError
-
-from odoo import api, models, _
-from odoo.exceptions import UserError
-
-_logger = logging.getLogger(__name__)
-
 from odoo import _, models
 
 _logger = logging.getLogger(__name__)
@@ -46,34 +39,38 @@ class KBizParser(models.AbstractModel):
             #'balance': float(balance)
         }
         return vals
-    
+
     def parse_statement(self, data):
-        """Parse a Krungthai fake XLS statement file."""
+        """Parse a Krungthai fake XLS statement file.
+
+        :return: tuple (account_number, statement dict)
+        :raises ValueError: if the data is not a KrungThai statement file
+        """
         try:
             # Of course, it's not really an XLS file!
             broken_html = "<html>" + data.decode('utf8') + "</html>"
             parser = etree.HTMLParser()
             tree = etree.parse(io.StringIO(broken_html), parser=parser)
-            rows = tree.xpath('/html/body/table/tr')
-            if len(rows) < 1:
-                raise ValidationError(_(
-                    "No table rows found to parse in statement file. "
-                    "The file might not be valid."))
-        except Exception as e:
-            _logger.error(e)
-            return (None, [None])
+        except (ValueError, etree.LxmlError) as e:
+            raise ValueError(
+                _("The file could not be read as a KrungThai statement: %s", e)
+            ) from e
 
-        statement = {}
-        transactions = []
-        start_date = None
-        end_date = None
+        rows = tree.xpath('/html/body/table/tr')
+        if len(rows) < 1:
+            raise ValueError(_(
+                "No table rows found to parse in statement file. "
+                "The file might not be valid."))
+
         account_number = None
-
+        transactions = []
+        first_balance = None
+        last_balance = None
         rowcount = 0
         for row in rows:
             values = row.xpath('td')
             rowcount += 1
-            if rowcount == 2:
+            if rowcount == 2 and len(values) > 1:
                 account_number = values[1].text.lstrip().rstrip().replace('-', ' ')
             if len(values) < 9:
                 continue
@@ -82,51 +79,22 @@ class KBizParser(models.AbstractModel):
                 continue
 
             # Add this statement line to our results
-            transactions.append(self._prepare_transaction_line_ktb(values))
+            vals = self._prepare_transaction_line_ktb(values)
+            transactions.append(vals)
+            # Running balance column, used to derive the statement balances
+            balance = float(values[8].text.lstrip().rstrip().replace(",", ""))
+            if first_balance is None:
+                first_balance = balance - vals["amount"]
+            last_balance = balance
 
-        # # Look up bank account
-        # bank_account = self.env['account.bank.account'].search([
-        #     'name', '=', account_number
-        # ])
-        # _logger.info("Bank account: %s", bank_account)
+        if not transactions:
+            raise ValueError(_("No transactions found in KrungThai statement file."))
 
-        statement["name"] = transactions[0]["date"][0:7]
-        statement["date"] = transactions[len(transactions) - 1]["date"]
-        statement["transactions"] = transactions
-            # 'balance_start': balance_start,
-            # 'balance_end_real': balance_start + total_amt,
-
-        return statement
-    
-    def parse(self, data):
-        """Parse a KrungThai XLS CSV statement file."""
-        statement = self.parse_statement(data)
-
-        # Account number could be included
-        return self.env.ref("base.THB").name, None, [statement]
-    
-    def _parse_file(self, data_file):
-        # If we can't read it, pass it to next handler
-        (account_number, stmtdata) = self._read_file_ktb(data_file)
-        if not stmtdata:
-            return super()._parse_file(data_file)
-
-        # Drop 'balance' from raw data, and total up
-        transactions = []
-        total_amt = 0.00
-        lineno = 0
-        for vals in stmtdata["transactions"]:
-            lineno += 1
-            total_amt += float(vals['amount'])
-            tx1 = dict(vals)
-            #del tx1['balance']
-            already_imported = self.env["account.statement.line"].search(
-                {[{"unique_import_id", "=", tx1["unique_import_id"]}]}
-            )
-            if len(already_imported) > 0:
-                _logger.warning(_("Statement line %d was already imported", lineno))
-                continue
-            transactions.append(tx1)
-        stmtdata["transactions"] = transactions
-
-        return stmtdata
+        statement = {
+            "name": transactions[0]["date"][0:7],
+            "date": transactions[-1]["date"],
+            "balance_start": first_balance,
+            "balance_end_real": last_balance,
+            "transactions": transactions,
+        }
+        return account_number, statement
